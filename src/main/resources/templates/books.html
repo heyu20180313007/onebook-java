@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>全部图书</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://cdn.bootcss.com/vue/2.6.10/vue.min.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+
+    <style>
+        .main-contain{width: 100%;margin: 0 auto; text-align: center;}
+        .book-card{width: 90%;text-align:center;}
+        .image{margin-top: 5%; max-width: 75%;max-height: 200px;}
+        .info{line-height: 20px;}
+        .title{font-weight: 700;font-size: 16px;}
+        .author:before{content: "作者: ";}
+        .author{font-size: 14px;}
+        .score:before{content: '豆瓣评分: ';}
+        .score{color:#494949; font-size: 14px;}
+        .number:before{content: '评论人数: ';}
+        .number{font-size: 14px;}
+        .price:before{content: '定价: '}
+        .price{font-size: 14px;}
+        .pages:before{content: '页数: ';}
+        .pages{font-size: 14px;}
+        .imprint:before{content: '出版时间: ';}
+        .imprint{font-size: 14px;}
+        .isbn:before{content: 'ISBN: ';}
+        .isbn{font-size: 14px;}
+        .more{margin-top: 20px;}
+        .el-header {
+            background-color: #B3C0D1;
+            color: #333;
+        }
+        .el-aside {
+            background-color: #D3DCE6;
+            color: #333;
+            text-align: center;
+            line-height: 20px;
+        }
+        .el-main {
+            background-color: #E9EEF3;
+            color: #333;
+            text-align: center;
+        }
+    </style>
+
+</head>
+<body>
+<script src="//unpkg.com/vue/dist/vue.js"></script>
+<script src="//unpkg.com/element-ui@2.13.0/lib/index.js"></script>
+<script src="https://cdn.bootcss.com/axios/0.19.0-beta.1/axios.js"></script>
+<div id="app" style="height: 100%">
+    <el-container  style="height: 800px; border: 1px solid #eee" ref="homePage">
+        <el-aside width="0">
+        </el-aside>
+
+        <el-container>
+            <el-header style="font-size: 16px">
+                <div class="header" style="margin-top: 10px;">
+                    所有书籍信息来自<a href="https://book.douban.com/">豆瓣读书</a>
+
+                    <el-input style="margin-left: 55%; width: 300px"
+                              placeholder="可以搜索书名,作者和出版社"
+                              suffix-icon="el-icon-date"
+                              v-model="keyword"></el-input>
+                    <el-button icon="el-icon-search" circle @click="search"></el-button>
+
+
+                </div>
+            </el-header>
+            <el-main class="main-contain">
+                <div>
+                    <el-row :gutter="20" v-for="book in books" style="margin-top: 10px;">
+                        <el-col :span="6" v-for="b in book">
+                            <el-card :body-style="{ padding: '0px' }" class="book-card">
+                                <img :src="b.img" class="image">
+                                <div style="padding: 14px;" class="info">
+                                        <span class="title">{{b.title}}</span>
+                                         <div class="author">{{b.author}}</div>
+                                    <div>
+                                        <span class="price">{{b.price}}</span>
+                                        <span class="pages">{{b.pages}}</span>
+                                    </div>
+                                    <div class="imprint">{{b.imprint}}</div>
+                                    <div class="isbn">{{b.isbn}}</div>
+                                    <div>
+                                        <div class="score">{{b.score}}</div>
+                                        <div class="number">{{b.number}}</div>
+                                    </div>
+                                    <div class="bottom clearfix" style="float: left">
+                                        <el-button type="text" class="button" @click="edit(b)">详情</el-button>
+                                    </div>
+                                    <div class="bottom clearfix" style="float: right">
+                                        <el-button type="text" class="button" @click="detail(b)">内容简介</el-button>
+                                    </div>
+                                </div>
+                            </el-card>
+                        </el-col>
+                    </el-row>
+                </div>
+                <div class="more" v-show="hasMore">
+                    <el-link type="primary" @click="more(next)" v-loading="loading">更多</el-link>
+                </div>
+                <div class="more" v-show="!hasMore">
+                    <el-link type="primary">没有更多了</el-link>
+                </div>
+            </el-main>
+        </el-container>
+
+    </el-container>
+    <el-dialog :title="content.title + '--内容简介'" :visible.sync="showContent">
+        <div v-html="content.content"></div>
+        <div><a :href="'https://book.douban.com/subject/' + content.id">去豆瓣查看详细信息</a> <el-button style="float: right;" @click="showContent = false">关闭</el-button></div>
+    </el-dialog>
+    <el-dialog title="书籍信息" :visible.sync="showEdit" style="align-items: center">
+        <el-form :model="editBook" style="width: 80%">
+            <el-form-item label="书名" label-width="120px">
+                <el-input v-model="editBook.title" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="出版社" label-width="120px">
+                <el-input v-model="editBook.press" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="原作名" label-width="120px">
+                <el-input v-model="editBook.original" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="译者" label-width="120px">
+                <el-input v-model="editBook.translator" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="出版年" label-width="120px">
+                <el-input v-model="editBook.imprint" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="页数" label-width="120px">
+                <el-input v-model="editBook.pages" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="定价" label-width="120px">
+                <el-input v-model="editBook.price" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="丛书" label-width="120px">
+                <el-input v-model="editBook.series" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="装帧" label-width="120px">
+                <el-input v-model="editBook.binding" autocomplete="off"></el-input>
+            </el-form-item>
+            <el-form-item label="ISBN" label-width="120px">
+                <el-input v-model="editBook.isbn" autocomplete="off"></el-input>
+            </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="showEdit = false">取 消</el-button>
+            <el-button type="primary" @click="showEdit = false">确 定</el-button>
+        </div>
+    </el-dialog>
+</div>
+</body>
+<script>
+    new Vue({
+        el: "#app",
+        data:{
+            books:[],
+            tmpBooks:[],
+            keyword:'',
+            showContent: false,
+            showEdit: false,
+            content: {},
+            editBook: {},
+            hasMore: false,
+            next: 0,
+            num: 20,
+            loading: true,
+            clientHeight: '',
+        },
+        methods: {
+            detail(book){
+                let tmp = '';
+                book.content.split("\n").forEach(it => {
+                    tmp += "<p>" + it + "</p>"
+                });
+
+                this.content = {
+                    id: book.id,
+                    title: book.title,
+                    content: tmp
+                };
+                this.showContent = true;
+            },
+            edit(book){
+                this.showEdit = true;
+                this.editBook = book;
+            },
+            more (next) {
+                this.loading = true;
+                axios.get("/book/books", {params: {start: this.next, num: 20}})
+                    .then(res => {
+                        books = res.data.data.books;
+                        for (let i = 0; i < books.length; i+=4) {
+                            this.books.push(books.slice(i, i + 4))
+                        }
+                        this.hasMore = res.data.data.hasMore;
+                        if (this.hasMore){
+                            this.next = res.data.data.next
+                        }
+                        this.loading = false;
+                    })
+                    .catch(err => {
+                        this.loading = false;
+                    });
+            },
+            search(){
+                if (this.tmpBooks.length == 0)
+                    this.tmpBooks = this.books;
+                axios.get("/book/search", {params:{keyword: this.keyword}})
+                    .then(res => {
+                        books = res.data.data.books;
+                        if (books.length > 0){
+                            let tBooks = []
+                            for (let i = 0; i < books.length; i+=4) {
+                                tBooks.push(books.slice(i, i + 4))
+                            }
+                            this.books = tBooks;
+                            this.hasMore = false;
+                        }else {
+                            this.$message({
+                                message: '没有找到和 ' + this.keyword + ' 的相关书籍',
+                                type: 'warning'
+                            });
+                        }
+                    })
+            },
+            changeFixed(clientHeight){ //动态修改样式
+                this.$refs.homePage.$el.style.height = clientHeight-20+'px';
+            },
+        },
+        created(){
+            axios.get("/book/books", {params: {start: 0, num: 20}})
+                .then(res => {
+                    books = res.data.data.books;
+                    let tBooks = []
+                    for (let i = 0; i < books.length; i+=4) {
+                        tBooks.push(books.slice(i, i + 4))
+                    }
+                    this.books = tBooks
+                    this.hasMore = res.data.data.hasMore
+                    if (this.hasMore){
+                        this.next = res.data.data.next
+                    }
+                    this.loading = false;
+                }).catch(err=>{this.loading = false;})
+
+        },
+        mounted(){
+            this.clientHeight = `${document.documentElement.clientHeight}`
+            window.onresize = function temp() {
+                this.clientHeight = `${document.documentElement.clientHeight}`;
+            };
+        },
+        watch: {
+            clientHeight: function () {
+                this.changeFixed(this.clientHeight)
+            },
+            keyword(){
+                if (this.keyword === '' && this.tmpBooks.length > 0){
+                    this.books = this.tmpBooks;
+                    this.tmpBooks = [];
+                    this.hasMore = true;
+                }
+            }
+        },
+
+    })
+</script>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!--<html>-->
+<head>
+    <title>OneBook</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="https://hitokoto.cn/favicon.ico">
+    <link rel="stylesheet" href="../static/asset/css/hitokoto.css" th:href="@{/asset/css/hitokoto.css}">
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <style>
+       .aplayer-lrc-contents > p {
+          color: #fff !important;
+          text-shadow: none !important;
+        }
+    </style>
+    <style>
+        #book{}
+        .book-card{margin: 0px auto; width: 275px; height: 500px;transform: translateY(20%);}
+        .info{line-height: 25px;}
+        .title{font-weight: 700;font-size: 18px;}
+        .author:before{content: "作者: ";}
+        .author{margin-top:10px;font-style:italic;font-size: 18px;}
+        .score:before{content: '豆瓣评分: ';}
+        .score{margin-right: 10px;color:#494949; font-size: 16px; font-weight: 700;}
+        .number:before{content: '评论人数: ';}
+        .number{margin-left: 10px;font-size: 16px; font-weight: 700;}
+        .price:before{content: '书籍定价: '}
+        .price{margin-right: 10px;font-size: 16px;}
+        .pages:before{content: '书籍页数: ';}
+        .pages{margin-left: 10px;font-size: 16px;}
+        .imprint:before{content: '出版时间: ';}
+        .imprint{font-size: 16px;}
+        .isbn:before{content: 'ISBN: ';}
+        .isbn{font-size: 16px;}
+        .time {
+            font-size: 13px;
+            color: #999;
+        }
+        .image {
+            margin: 2px;
+            width: 270px;
+            display: block;
+        }
+
+    </style>
+    <!-- BrowserHappy -->
+    <script>
+      var browsehappy_config = {
+        ie: 12,
+        type: 'box',
+        debug: false,
+        tip: "站点目前不支持 IE。请 ",
+        show: ['firefox', 'chrome']
+      };
+    </script>
+    <script src="../static/asset/js/browserhappy.min.js" th:src="@{/asset/js/browserhappy.min.js}"></script>
+</head>
+
+<body style="position:absolute;">
+    <div class="background">
+    </div>
+    <div id="app">
+        <div class="book-card">
+            <el-card :body-style="{ padding: '0px' }">
+                <img :src="book.img" class="image">
+                <div style="padding: 14px;" class="info">
+                    <span class="title" v-text="book.title"></span>
+                    <div class="author">{{book.author}}</div>
+                    <div>
+                        <span class="price">{{book.price}}</span>
+                        <span class="pages">{{book.pages}}</span>
+                    </div>
+                    <div class="imprint">{{book.imprint}}</div>
+                    <div class="isbn">{{book.isbn}}</div>
+                    <div style="margin-top: 10px">
+                        <span class="score">{{book.score}}</span>
+                        <span class="number">{{book.number}}</span>
+                    </div>
+                    <div class="bottom clearfix" style="float: right">
+                        <el-button type="text" class="button" @click="detial">内容简介</el-button>
+                    </div>
+                </div>
+            </el-card>
+        </div>
+
+        <el-dialog :title="book.title + '--内容简介'" :visible.sync="showContent">
+            <div v-html="book.content"></div>
+            <div><a :href="'https://book.douban.com/subject/' + book.id">去豆瓣查看详细信息</a></div>
+        </el-dialog>
+    </div>
+</body>
+
+<script src="https://cdn.bootcss.com/vue/2.6.10/vue.min.js"></script>
+<script src="//unpkg.com/element-ui@2.13.0/lib/index.js"></script>
+<script src="https://cdn.bootcss.com/axios/0.19.0-beta.1/axios.js"></script>
+<script>
+    const app = new Vue({
+        el: "#app",
+        data:{
+            showContent: false,
+            content: '',
+            book: ''
+        },
+        methods:{
+            test(){console.log(this.book);},
+            detial(){
+                console.log(this.book);
+                if(this.book === '') return
+                let tmp = '';
+                this.book.content.split("\n").forEach(it => {
+                    tmp += "<p>" + it + "</p>"
+                });
+                this.book.content = tmp;
+                this.showContent = true;
+            }
+        },
+        created(){
+            axios.get('/book/oneBook').then(res => {
+                console.log(res.data);
+                this.book = res.data.data.book
+            })
+        }
+    })
+</script>
+</html>
